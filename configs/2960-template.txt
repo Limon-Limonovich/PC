@@ -1,0 +1,43 @@
+! ============================================================
+! Практика 04. Коммутатор 2960-24TT - агрегирование LACP
+! ОДИН и тот же скрипт на SW1, SW2, SW3.
+! Меняется ТОЛЬКО строка hostname.
+! ============================================================
+enable
+configure terminal
+
+no ip domain-lookup
+hostname SW1
+
+! ---- Единственный канал этого коммутатора: Fa0/1-2 -> Core ----
+interface range fa0/1-2
+ channel-protocol lacp
+ channel-group 1 mode passive
+ exit
+
+end
+write memory
+
+! ============================================================
+! ПРОВЕРКА
+!   show etherchannel summary
+!
+! Ожидается:
+!   Group  Port-channel  Protocol    Ports
+!   1      Po1(SU)         LACP        Fa0/1(P)  Fa0/2(P)
+!
+! ВАЖНО: именно passive, потому что на 3560 стоит active.
+!        passive + passive не поднимется; active + active тоже можно.
+! ============================================================
+
+! БОНУС (тест отказоустойчивости + адрес для пинга)
+! interface vlan 1
+!  ip address 192.168.1.11 255.255.255.0     ! .12 для SW2, .13 для SW3
+!  no shutdown
+!  exit
+!
+! ping 192.168.1.1
+! configure terminal
+!  interface fa0/1
+!   shutdown            <- канал Po1 остаётся (SU), пинг продолжается
+!   no shutdown
